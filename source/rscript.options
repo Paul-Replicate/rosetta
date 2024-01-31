@@ -1,0 +1,4 @@
+-overwrite
+-in:file:s 1UBQ.pdb
+-nstruct 1
+-parser:protocol /home/cbc-lindert-group2/data/toth.354/rosetta/source/src/apps/pilot/Paul-Replicate/my_awesome_rscript.xml
