@@ -60,7 +60,6 @@ int main( int argc, char ** argv) {
 	core::optimization::MinimizerOptions min_opts( "lbfgs_armijo_atol", 0.01, true );
 	core::optimization::AtomTreeMinimizer atm;
 	core::pose::Pose copy_pose = *mypose;
-	
 
 	core::Size num_res = mypose->size();
 	core::Size mc_cycles = 100;
@@ -91,13 +90,11 @@ int main( int argc, char ** argv) {
 		} else {
 			std::cout << "rejected" << std::endl;
 		}
-		
 	}
 
 	std::cout << accepted_count << " cycles were accepted out of " << mc_cycles << std::endl;
 	std::cout << "Percent Accepted: " << static_cast<core::Real>(accepted_count) / static_cast<core::Real>(mc_cycles) << std::endl;
 	std::cout << "Average Score: " << running_score_avg / static_cast<core::Real>(mc_cycles) << std::endl;
-
 
 	return 0;
 } 

@@ -18,16 +18,23 @@
 #include <test/core/init_util.hh>
 
 // Utility headers
-#include <string>
+#include <basic/Tracer.hh>
 
 /// Project headers
 #include <core/types.hh>
+#include <core/pose/Pose.hh>
+#include <core/import_pose/import_pose.hh>
+#include <core/scoring/dssp/Dssp.hh>
+#include <core/kinematics/FoldTree.hh>
 
 // C++ headers
+#include <string>
 
 //Auto Headers
 #include <core/pack/dunbrack/DunbrackRotamer.hh>
 
+//Tracer
+static basic::Tracer TR( "protocols.bootcamp.FoldTreeFromSS.cxxtest" );
 
 // --------------- Test Class --------------- //
 
@@ -43,6 +50,49 @@ public:
 	// suite level, i.e. something that gets constructed once before all the tests in the test suite are run,
 	// suites have to be dynamically created. See CxxTest sample directory for example.
 
+	std::string fold_tree_from_ss( core::pose::Pose & in_pose ) {
+		// Take pose return FoldTree
+		core::Size numres = in_pose.size();
+		core::scoring::dssp::Dssp DSSP = core::scoring::dssp::Dssp( in_pose );
+
+		std::string dssp_string = "";
+		for (core::Size res=1; res <= numres; res++) {
+			dssp_string + DSSP.get_dssp_secstruct(res);
+		}
+		
+		core::kinematics::FoldTree pose_from_dssp = fold_tree_from_dssp_string( dssp_string );
+		TR << pose_from_dssp;
+		return dssp_string;
+	}
+
+	core::kinematics::FoldTree
+	fold_tree_from_dssp_string( std::string dssp_string ) {
+		// Take string and return FoldTree
+		utility::vector1< std::pair< core::Size, core::Size > > ss_bounds;
+		ss_bounds = identify_secondary_structure_spans( dssp_string );
+		core::Size nres = dssp_string.size();
+
+		// Construct FoldTree from number of residues only
+		core::kinematics::FoldTree ft = core::kinematics::FoldTree(nres);
+
+		// Set the midpoint of the first SS element
+		// sub half of the ss.first and ss.second difference to ss.first to get the mid
+		core::Size first_ss_mid = curr_ss.second - ((curr_ss.second - curr_ss.first) / 2);
+
+		utility::vector1< std::pair< core::Size, core::Size > > loop_boundaries;
+
+		for (core::Size i=1; i <= ss_bounds.size(); i++) { 
+			// Loop over all but first SS elem.
+			std::pair curr_ss = ss_bounds[i];
+
+			
+		}
+
+		//core::Size pep_edge_ct = 4 * ss_bounds.size() - 2;
+		//code::Size jump_edge_ct = 2 * ss_bounds.size() - 2;
+
+		return ft;
+	}
 	
 	utility::vector1< std::pair< core::Size, core::Size > >
 	identify_secondary_structure_spans( std::string const & ss_string )
@@ -80,7 +130,9 @@ public:
 	void setUp() {
 
 		std::cout << "TEST" << std::endl;
-		//std::string sample1 = "   EEEEE   HHHHHHHH  EEEEE   IGNOR EEEEEE   HHHHHHHHHHH  EEEEE  HHHH   ";
+		std::string string1 = "   EEEEE   HHHHHHHH  EEEEE   IGNOR EEEEEE   HHHHHHHHHHH  EEEEE  HHHH   ";
+		std::string string2 = "HHHHHHH   HHHHHHHHHHHH      HHHHHHHHHHHHEEEEEEEEEEHHHHHHH EEEEHHH ";
+		std::string string3 = "EEEEEEEEE EEEEEEEE EEEEEEEEE H EEEEE H H H EEEEEEEE";
 		core_init();
 		sample1 = identify_secondary_structure_spans("   EEEEE   HHHHHHHH  EEEEE   IGNOR EEEEEE   HHHHHHHHHHH  EEEEE  HHHH   ");
 		sample2 = identify_secondary_structure_spans("HHHHHHH   HHHHHHHHHHHH      HHHHHHHHHHHHEEEEEEEEEEHHHHHHH EEEEHHH ");
@@ -146,18 +198,25 @@ public:
 			TS_ASSERT_EQUALS(sample3[i].first, sample3_compare[i].first);
 			TS_ASSERT_EQUALS(sample3[i].second, sample3_compare[i].second);
 		}
-		/*
-		"   EEEEE   HHHHHHHH  EEEEE   IGNOR EEEEEE   HHHHHHHHHHH  EEEEE  HHHH   "
-			with 7 secondary structure elements, spanning residues 4 to 8, 12 to 19, 22 to 26, 36 to 41, 45 to 55, 58 to 62, and 65 to 68 (notice there are some non H/E elements that you should ignore.
-			"HHHHHHH   HHHHHHHHHHHH      HHHHHHHHHHHHEEEEEEEEEEHHHHHHH EEEEHHH "
-			with 7 secondary structure elements, spanning residues 1 to 7, 11 to 22, 29 to 40, 41 to 50, 51 to 57, 59 to 62, and 63 to 65.
-			"EEEEEEEEE EEEEEEEE EEEEEEEEE H EEEEE H H H EEEEEEEE"
-			with 9 secondary structure elements, spanning residues 1 to 9, 11 to 18, 20 to 28, 30 to 30, 32 to 36, 38 to 38, 40 to 40, 42 to 42, and 44 to 51.
-		*/
+	}
+
+	void test_fold_tree_from_ss() {
+		core::pose::Pose my_pose = create_test_in_pdb_pose();
+		std::string pose_seq = fold_tree_from_ss(my_pose);
+		TR << pose_seq << std::endl;
+		std::cout << pose_seq << std::endl;
+		
+	}
+
+	void test_fold_tree_from_dssp_string() {
 
 	}
+
 private:
 	utility::vector1< std::pair< core::Size, core::Size > > sample1;
 	utility::vector1< std::pair< core::Size, core::Size > > sample2;
 	utility::vector1< std::pair< core::Size, core::Size > > sample3;
+	std::string string1;
+	std::string string2;
+	std::string string3;
 };
