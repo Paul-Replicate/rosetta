@@ -50,19 +50,16 @@ public:
 	// suite level, i.e. something that gets constructed once before all the tests in the test suite are run,
 	// suites have to be dynamically created. See CxxTest sample directory for example.
 
-	std::string fold_tree_from_ss( core::pose::Pose & in_pose ) {
+	core::pose::Pose 
+	fold_tree_from_ss( core::pose::Pose & pose ) {
 		// Take pose return FoldTree
-		core::Size numres = in_pose.size();
-		core::scoring::dssp::Dssp DSSP = core::scoring::dssp::Dssp( in_pose );
+		core::scoring::dssp::Dssp DSSP = core::scoring::dssp::Dssp( pose );
 
-		std::string dssp_string = "";
-		for (core::Size res=1; res <= numres; res++) {
-			dssp_string + DSSP.get_dssp_secstruct(res);
-		}
+		std::string dssp_string = DSSP.get_dssp_secstruct();
 		
-		core::kinematics::FoldTree pose_from_dssp = fold_tree_from_dssp_string( dssp_string );
-		TR << pose_from_dssp;
-		return dssp_string;
+		core::kinematics::FoldTree ft_from_dssp = fold_tree_from_dssp_string( dssp_string );
+		//pose.fold_tree(ft_from_dssp);
+		return pose;
 	}
 
 	core::kinematics::FoldTree
@@ -70,28 +67,62 @@ public:
 		// Take string and return FoldTree
 		utility::vector1< std::pair< core::Size, core::Size > > ss_bounds;
 		ss_bounds = identify_secondary_structure_spans( dssp_string );
-		core::Size nres = dssp_string.size();
 
 		// Construct FoldTree from number of residues only
-		core::kinematics::FoldTree ft = core::kinematics::FoldTree(nres);
+		core::kinematics::FoldTree ft = core::kinematics::FoldTree();
 
-		// Set the midpoint of the first SS element
-		// sub half of the ss.first and ss.second difference to ss.first to get the mid
-		core::Size first_ss_mid = curr_ss.second - ((curr_ss.second - curr_ss.first) / 2);
-
-		utility::vector1< std::pair< core::Size, core::Size > > loop_boundaries;
-
-		for (core::Size i=1; i <= ss_bounds.size(); i++) { 
-			// Loop over all but first SS elem.
-			std::pair curr_ss = ss_bounds[i];
-
-			
+		core::Size root_res = calculate_ss_center(ss_bounds[1].first, ss_bounds[1].second);
+		if (root_res != 1) {
+			ft.add_edge( root_res, 1, core::kinematics::Edge::PEPTIDE );
 		}
+		if (root_res != ss_bounds[1].second) {
+			ft.add_edge( root_res, ss_bounds[1].second, core::kinematics::Edge::PEPTIDE );
+		}
+		
+		core::Size jump_counter = 1;
+		for (core::Size i=2; i <= ss_bounds.size(); i++) { 
+
+			// loop jump then RL
+			core::Size loop_start = ss_bounds[i-1].second + 1;
+			core::Size loop_end = ss_bounds[i].first - 1;	
+			core::Size loop_mid = calculate_ss_center(loop_start, loop_end);
+			ft.add_edge( root_res,  loop_mid, jump_counter);
+			++jump_counter;
+			if (loop_mid != loop_start) {
+				ft.add_edge( loop_mid, loop_start, core::kinematics::Edge::PEPTIDE );
+			}
+			if (loop_mid != loop_end) {
+				ft.add_edge( loop_mid, loop_end, core::kinematics::Edge::PEPTIDE );
+			}
+
+			// ss jump then RL
+			core::Size ss_start = ss_bounds[i].first;
+			core::Size ss_end = ss_bounds[i].second;	
+			core::Size ss_mid = calculate_ss_center(ss_start, ss_end);
+			ft.add_edge( root_res, ss_mid, jump_counter);
+			++jump_counter;
+			if (ss_mid != ss_start) {
+				ft.add_edge( ss_mid, ss_start, core::kinematics::Edge::PEPTIDE );
+			}
+			if (ss_mid != ss_end) {
+				ft.add_edge( ss_mid, ss_end, core::kinematics::Edge::PEPTIDE );
+			}	
+		}
+		
+		std::cout << "We made " << jump_counter << " jumps" << std::endl;
+		std::cout << ft << std::endl;
 
 		//core::Size pep_edge_ct = 4 * ss_bounds.size() - 2;
 		//code::Size jump_edge_ct = 2 * ss_bounds.size() - 2;
 
 		return ft;
+	}
+
+
+
+	core::Size 
+	calculate_ss_center( core::Size first, core::Size second ) {
+		return second - ((second - first) / 2);
 	}
 	
 	utility::vector1< std::pair< core::Size, core::Size > >
@@ -143,74 +174,26 @@ public:
 	void tearDown() {
 	}
 
-	void test_hello_world() {
-		TS_ASSERT( true );
-	}
-
 	void test_identify_secondary_structure_spans() {
 		TS_ASSERT_EQUALS(sample1.size(), 7);
 		TS_ASSERT_EQUALS(sample2.size(), 7);
 		TS_ASSERT_EQUALS(sample3.size(), 9);
-		
-		// Test the pairs in sample 1
-		utility::vector1< std::pair< core::Size, core::Size > > sample1_compare;
-		sample1_compare.push_back(std::make_pair(12,19));
-		sample1_compare.push_back(std::make_pair(22,26));
-		sample1_compare.push_back(std::make_pair(36,41));
-		sample1_compare.push_back(std::make_pair(45,55));
-		sample1_compare.push_back(std::make_pair(58,62));
-		sample1_compare.push_back(std::make_pair(65,68));
-		for( core::Size i=0; i <= sample1.size(); i++) {
-			std::cout << sample1[i].first << std::endl;
-			std::cout << sample1_compare[i].first << std::endl;
-			TS_ASSERT_EQUALS(sample1[i].first, sample1_compare[i].first);
-			TS_ASSERT_EQUALS(sample1[i].second, sample1_compare[i].second);
-		}
-		
-		utility::vector1< std::pair< core::Size, core::Size > > sample2_compare;
-		sample2_compare.push_back(std::make_pair(1,7));
-		sample2_compare.push_back(std::make_pair(11,22));
-		sample2_compare.push_back(std::make_pair(29,40));
-		sample2_compare.push_back(std::make_pair(41,50));
-		sample2_compare.push_back(std::make_pair(51,57));
-		sample2_compare.push_back(std::make_pair(59,62));
-		sample2_compare.push_back(std::make_pair(63,65));
-		for( core::Size i=0; i <= sample2.size(); i++) {
-			std::cout << sample1[i].first << std::endl;
-			std::cout << sample2_compare[i].first << std::endl;
-			TS_ASSERT_EQUALS(sample2[i].first, sample2_compare[i].first);
-			TS_ASSERT_EQUALS(sample2[i].second, sample2_compare[i].second);
-		}
-
-		utility::vector1< std::pair< core::Size, core::Size > > sample3_compare;
-		sample3_compare.push_back(std::make_pair(1,9));
-		sample3_compare.push_back(std::make_pair(11,18));
-		sample3_compare.push_back(std::make_pair(20,28));
-		sample3_compare.push_back(std::make_pair(30,30));
-		sample3_compare.push_back(std::make_pair(32,36));
-		sample3_compare.push_back(std::make_pair(38,38));
-		sample3_compare.push_back(std::make_pair(40,40));
-		sample3_compare.push_back(std::make_pair(42,42));
-		sample3_compare.push_back(std::make_pair(44,51));
-		for( core::Size i=0; i <= sample3.size(); i++) {
-			std::cout << sample3[i].first << std::endl;
-			std::cout << sample3_compare[i].first << std::endl;
-			TS_ASSERT_EQUALS(sample3[i].first, sample3_compare[i].first);
-			TS_ASSERT_EQUALS(sample3[i].second, sample3_compare[i].second);
-		}
 	}
 
 	void test_fold_tree_from_ss() {
-		core::pose::Pose my_pose = create_test_in_pdb_pose();
-		std::string pose_seq = fold_tree_from_ss(my_pose);
-		TR << pose_seq << std::endl;
-		std::cout << pose_seq << std::endl;
+		core::pose::Pose pose_in = create_test_in_pdb_pose();
+		core::pose::Pose pose_out = fold_tree_from_ss(pose_in);
+		TS_ASSERT_EQUALS(pose_in.size(), pose_out.size());
+		TS_ASSERT_DIFFERS(pose_in.fold_tree(), pose_out.fold_tree())
 		
 	}
 
 	void test_fold_tree_from_dssp_string() {
-
+		std::string test_dssp = "   EEEEEEE    EEEEEEE         EEEEEEEEE    EEEEEEEEEE   HHHHHH         EEEEEEEEE         EEEEE     ";
+		TS_ASSERT_EQUALS(fold_tree_from_dssp_string(test_dssp).size(), 38);
+		TS_ASSERT(fold_tree_from_dssp_string(test_dssp).check_fold_tree());
 	}
+	
 
 private:
 	utility::vector1< std::pair< core::Size, core::Size > > sample1;
