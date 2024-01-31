@@ -13,6 +13,7 @@
 
 
 // Test headers
+#include <protocols/bootcamp/fold_tree_from_ss.hh>
 #include <cxxtest/TestSuite.h>
 #include <test/util/pose_funcs.hh>
 #include <test/core/init_util.hh>
@@ -36,6 +37,9 @@
 //Tracer
 static basic::Tracer TR( "protocols.bootcamp.FoldTreeFromSS.cxxtest" );
 
+//Namespace
+using namespace protocol::bootcamp;
+
 // --------------- Test Class --------------- //
 
 class FoldTreeFromSS : public CxxTest::TestSuite {
@@ -49,113 +53,6 @@ public:
 	// In CxxTest, setUp()/tearDown() are executed around each test case. If you need a fixture on the test
 	// suite level, i.e. something that gets constructed once before all the tests in the test suite are run,
 	// suites have to be dynamically created. See CxxTest sample directory for example.
-
-	core::pose::Pose 
-	fold_tree_from_ss( core::pose::Pose & pose ) {
-		// Take pose return FoldTree
-		core::scoring::dssp::Dssp DSSP = core::scoring::dssp::Dssp( pose );
-
-		std::string dssp_string = DSSP.get_dssp_secstruct();
-		
-		core::kinematics::FoldTree ft_from_dssp = fold_tree_from_dssp_string( dssp_string );
-		//pose.fold_tree(ft_from_dssp);
-		return pose;
-	}
-
-	core::kinematics::FoldTree
-	fold_tree_from_dssp_string( std::string dssp_string ) {
-		// Take string and return FoldTree
-		utility::vector1< std::pair< core::Size, core::Size > > ss_bounds;
-		ss_bounds = identify_secondary_structure_spans( dssp_string );
-
-		// Construct FoldTree from number of residues only
-		core::kinematics::FoldTree ft = core::kinematics::FoldTree();
-
-		core::Size root_res = calculate_ss_center(ss_bounds[1].first, ss_bounds[1].second);
-		if (root_res != 1) {
-			ft.add_edge( root_res, 1, core::kinematics::Edge::PEPTIDE );
-		}
-		if (root_res != ss_bounds[1].second) {
-			ft.add_edge( root_res, ss_bounds[1].second, core::kinematics::Edge::PEPTIDE );
-		}
-		
-		core::Size jump_counter = 1;
-		for (core::Size i=2; i <= ss_bounds.size(); i++) { 
-
-			// loop jump then RL
-			core::Size loop_start = ss_bounds[i-1].second + 1;
-			core::Size loop_end = ss_bounds[i].first - 1;	
-			core::Size loop_mid = calculate_ss_center(loop_start, loop_end);
-			ft.add_edge( root_res,  loop_mid, jump_counter);
-			++jump_counter;
-			if (loop_mid != loop_start) {
-				ft.add_edge( loop_mid, loop_start, core::kinematics::Edge::PEPTIDE );
-			}
-			if (loop_mid != loop_end) {
-				ft.add_edge( loop_mid, loop_end, core::kinematics::Edge::PEPTIDE );
-			}
-
-			// ss jump then RL
-			core::Size ss_start = ss_bounds[i].first;
-			core::Size ss_end = ss_bounds[i].second;	
-			core::Size ss_mid = calculate_ss_center(ss_start, ss_end);
-			ft.add_edge( root_res, ss_mid, jump_counter);
-			++jump_counter;
-			if (ss_mid != ss_start) {
-				ft.add_edge( ss_mid, ss_start, core::kinematics::Edge::PEPTIDE );
-			}
-			if (ss_mid != ss_end) {
-				ft.add_edge( ss_mid, ss_end, core::kinematics::Edge::PEPTIDE );
-			}	
-		}
-		
-		std::cout << "We made " << jump_counter << " jumps" << std::endl;
-		std::cout << ft << std::endl;
-
-		//core::Size pep_edge_ct = 4 * ss_bounds.size() - 2;
-		//code::Size jump_edge_ct = 2 * ss_bounds.size() - 2;
-
-		return ft;
-	}
-
-
-
-	core::Size 
-	calculate_ss_center( core::Size first, core::Size second ) {
-		return second - ((second - first) / 2);
-	}
-	
-	utility::vector1< std::pair< core::Size, core::Size > >
-	identify_secondary_structure_spans( std::string const & ss_string )
-	{
-	utility::vector1< std::pair< core::Size, core::Size > > ss_boundaries;
-	core::Size strand_start = -1;
-	for ( core::Size ii = 0; ii < ss_string.size(); ++ii ) {
-		if ( ss_string[ ii ] == 'E' || ss_string[ ii ] == 'H'  ) {
-		if ( int( strand_start ) == -1 ) {
-			strand_start = ii;
-		} else if ( ss_string[ii] != ss_string[strand_start] ) {
-			ss_boundaries.push_back( std::make_pair( strand_start+1, ii ) );
-			strand_start = ii;
-		}
-		} else {
-		if ( int( strand_start ) != -1 ) {
-			ss_boundaries.push_back( std::make_pair( strand_start+1, ii ) );
-			strand_start = -1;
-		}
-		}
-	}
-	if ( int( strand_start ) != -1 ) {
-		// last residue was part of a ss-eleemnt                                                                                                                                
-		ss_boundaries.push_back( std::make_pair( strand_start+1, ss_string.size() ));
-	}
-	for ( core::Size ii = 1; ii <= ss_boundaries.size(); ++ii ) {
-		std::cout << "SS Element " << ii << " from residue "
-		<< ss_boundaries[ ii ].first << " to "
-		<< ss_boundaries[ ii ].second << std::endl;
-	}
-	return ss_boundaries;
-	}
 
 	// Shared initialization goes here.
 	void setUp() {
@@ -182,9 +79,11 @@ public:
 
 	void test_fold_tree_from_ss() {
 		core::pose::Pose pose_in = create_test_in_pdb_pose();
+		//TR << "INPUT POSE TREE: " << pose_in.fold_tree() << std::endl;
+		// core::Size pose_in_ft_size = pose_in.fold_tree().size();
 		core::pose::Pose pose_out = fold_tree_from_ss(pose_in);
+		// core::Size pose_out_ft_size = pose_out.fold_tree().size();
 		TS_ASSERT_EQUALS(pose_in.size(), pose_out.size());
-		//TS_ASSERT_DIFFERS(pose_in.fold_tree(), pose_out.fold_tree())
 		
 	}
 

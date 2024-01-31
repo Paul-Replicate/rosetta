@@ -8,6 +8,7 @@
 // (c) For more information, see http://www.rosettacommons.org. Questions about this can be
 // (c) addressed to University of Washington UW TechTransfer, email: license@u.washington.edu.
 
+
 #include <iostream>
 #include <core/types.hh>
 #include <basic/options/option.hh>
@@ -20,6 +21,7 @@
 #include <core/scoring/ScoreFunction.hh>
 
 #include <core/scoring/ScoreFunctionFactory.hh>
+#include <core/scoring/ScoreType.hh>
 #include <numeric/random/random.hh>
 #include <protocols/moves/MonteCarlo.hh>
 
@@ -31,6 +33,9 @@
 #include <core/optimization/MinimizerOptions.hh>
 #include <core/optimization/AtomTreeMinimizer.hh>
 #include <basic/Tracer.hh>
+#include <core/pose/variant_util.hh>
+
+#include <protocols/bootcamp/fold_tree_from_ss.hh>
 
 int main( int argc, char ** argv) {
 	devel::init( argc, argv );
@@ -40,14 +45,22 @@ int main( int argc, char ** argv) {
 	} else {
 		std::cout << "You didn't provide a PDB file with the -in::file::s option" << std::endl;
 		return 1;
-	}
+	}	
 
-	thread_local static basic::Tracer TR( "core.scoring.etable.Etable" );
+	thread_local static basic::Tracer TR( "apps.pilot.Paul-Replicate.bootcamp.cc" );
     TR << "TestingTracer" << std::endl;
 
 
 	core::pose::PoseOP mypose = core::import_pose::pose_from_file( filenames[1] );
+	*mypose = protocols::bootcamp::fold_tree_from_ss( *mypose );
+	core::pose::correctly_add_cutpoint_variants(*mypose );
+
+
 	core::scoring::ScoreFunctionOP sfxn = core::scoring::get_score_function();
+	sfxn->set_weight( core::scoring::linear_chainbreak, 1.0);
+
+	// Add linear_chainbreak to score function to punish
+
 	//core::Real score = sfxn->score( * mypose );
 
 	protocols::moves::MonteCarlo mc = protocols::moves::MonteCarlo( *mypose,  *sfxn, 1.0 );
@@ -59,6 +72,8 @@ int main( int argc, char ** argv) {
 	mm.set_chi( true );
 	core::optimization::MinimizerOptions min_opts( "lbfgs_armijo_atol", 0.01, true );
 	core::optimization::AtomTreeMinimizer atm;
+
+	*mypose = protocols::bootcamp::fold_tree_from_ss( *mypose );
 	core::pose::Pose copy_pose = *mypose;
 
 	core::Size num_res = mypose->size();
@@ -74,7 +89,6 @@ int main( int argc, char ** argv) {
 		core::Real orig_psi = mypose->psi( randres );
 		mypose->set_phi( randres, orig_phi + pert1 );
 		mypose->set_psi( randres, orig_psi + pert2 );
-
 		core::pack::task::PackerTaskOP repack_task = core::pack::task::TaskFactory::create_packer_task( *mypose );
 		repack_task->restrict_to_repacking();
 		core::pack::pack_rotamers( *mypose, *sfxn, repack_task );
@@ -91,6 +105,9 @@ int main( int argc, char ** argv) {
 			std::cout << "rejected" << std::endl;
 		}
 	}
+
+	// 68 to 73% accept
+	// avg ~ -250 REU
 
 	std::cout << accepted_count << " cycles were accepted out of " << mc_cycles << std::endl;
 	std::cout << "Percent Accepted: " << static_cast<core::Real>(accepted_count) / static_cast<core::Real>(mc_cycles) << std::endl;
