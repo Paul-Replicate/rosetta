@@ -14,15 +14,15 @@
 #include <basic/options/keys/in.OptionKeys.gen.hh>
 #include <devel/init.hh>
 #include <utility/pointer/owning_ptr.hh>
-// #include <core/pose/Pose.fwd.hh>
+
 #include <core/pose/Pose.hh>
 #include <core/import_pose/import_pose.hh>
 #include <core/scoring/ScoreFunction.hh>
-// #include <core/scoring/ScoreFunction.fwd.hh>
+
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <numeric/random/random.hh>
 #include <protocols/moves/MonteCarlo.hh>
-// #include <numeric/random/random.functions.hh>
+
 #include <protocols/moves/PyMOLMover.hh>
 #include <core/pack/task/PackerTask.hh>
 #include <core/pack/task/TaskFactory.hh>
@@ -30,6 +30,7 @@
 #include <core/kinematics/MoveMap.hh>
 #include <core/optimization/MinimizerOptions.hh>
 #include <core/optimization/AtomTreeMinimizer.hh>
+#include <basic/Tracer.hh>
 
 int main( int argc, char ** argv) {
 	devel::init( argc, argv );
@@ -40,6 +41,10 @@ int main( int argc, char ** argv) {
 		std::cout << "You didn't provide a PDB file with the -in::file::s option" << std::endl;
 		return 1;
 	}
+
+	thread_local static basic::Tracer TR( "core.scoring.etable.Etable" );
+    TR << "TestingTracer" << std::endl;
+
 
 	core::pose::PoseOP mypose = core::import_pose::pose_from_file( filenames[1] );
 	core::scoring::ScoreFunctionOP sfxn = core::scoring::get_score_function();
@@ -58,8 +63,11 @@ int main( int argc, char ** argv) {
 	
 
 	core::Size num_res = mypose->size();
-	core::Size mc_cycles = 3;
+	core::Size mc_cycles = 100;
+	core::Size accepted_count = 0;
+	core::Real running_score_avg = 0.0;
 	for (core::Size i=0; i <= mc_cycles; i++ ) {
+		TR << "Running MC Cycle " << i << std::endl;
 		core::Size randres = numeric::random::uniform() * num_res + 1;
 		core::Real pert1 = numeric::random::gaussian();
 		core::Real pert2 = numeric::random::gaussian();
@@ -74,10 +82,22 @@ int main( int argc, char ** argv) {
 		copy_pose = *mypose;
 		atm.run( copy_pose, mm, *sfxn, min_opts );
 		*mypose = copy_pose;
-
+		
 		bool accepted = mc.boltzmann( *mypose );
-		std::cout << accepted << std::endl;
+		running_score_avg += mc.last_score();  // Add score each cycle. Div below to get avg score
+		if (accepted) {
+			accepted_count += 1;
+			std::cout << "accepted" << std::endl;
+		} else {
+			std::cout << "rejected" << std::endl;
+		}
+		
 	}
+
+	std::cout << accepted_count << " cycles were accepted out of " << mc_cycles << std::endl;
+	std::cout << "Percent Accepted: " << static_cast<core::Real>(accepted_count) / static_cast<core::Real>(mc_cycles) << std::endl;
+	std::cout << "Average Score: " << running_score_avg / static_cast<core::Real>(mc_cycles) << std::endl;
+
 
 	return 0;
 } 

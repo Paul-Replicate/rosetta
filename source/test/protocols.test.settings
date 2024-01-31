@@ -78,6 +78,10 @@ sources = {
 	"backrub" : [
 		"BackrubProtocolTests",
 	],
+	
+	"bootcamp" : [
+        "FoldTreeFromSS",
+	],
 
 	"branch_angle" : [
 		"BranchAngleOptimizer",
