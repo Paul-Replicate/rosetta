@@ -14,6 +14,7 @@
 // Unit headers
 #include <protocols/bootcamp/BootCampMover.hh>
 #include <protocols/bootcamp/BootCampMoverCreator.hh>
+#include <protocols/jd2/JobDistributor.hh>
 
 // Core headers
 #include <core/pose/Pose.hh>
@@ -31,6 +32,33 @@
 #include <utility/vector1.hh>
 #include <basic/citation_manager/UnpublishedModuleInfo.hh>
 
+#include <iostream>
+#include <core/types.hh>
+#include <basic/options/option.hh>
+#include <basic/options/keys/in.OptionKeys.gen.hh>
+#include <devel/init.hh>
+#include <utility/pointer/owning_ptr.hh>
+
+#include <core/import_pose/import_pose.hh>
+#include <core/scoring/ScoreFunction.hh>
+
+#include <core/scoring/ScoreFunctionFactory.hh>
+#include <core/scoring/ScoreType.hh>
+#include <numeric/random/random.hh>
+#include <protocols/moves/MonteCarlo.hh>
+
+#include <protocols/moves/PyMOLMover.hh>
+#include <core/pack/task/PackerTask.hh>
+#include <core/pack/task/TaskFactory.hh>
+#include <core/pack/pack_rotamers.hh>
+#include <core/kinematics/MoveMap.hh>
+#include <core/optimization/MinimizerOptions.hh>
+#include <core/optimization/AtomTreeMinimizer.hh>
+#include <core/pose/variant_util.hh>
+
+#include <protocols/bootcamp/fold_tree_from_ss.hh>
+
+
 static basic::Tracer TR( "protocols.bootcamp.BootCampMover" );
 
 namespace protocols {
@@ -44,7 +72,7 @@ namespace bootcamp {
 BootCampMover::BootCampMover():
 	protocols::moves::Mover( BootCampMover::mover_name() )
 {
-
+	//protocols::jd2::JobDistributor::get_instance();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,8 +85,68 @@ BootCampMover::~BootCampMover(){}
 
 /// @brief Apply the mover
 void
-BootCampMover::apply( core::pose::Pose& ){
+BootCampMover::apply( core::pose::Pose& mypose ){
 
+	//mypose = *mypose;
+	mypose = protocols::bootcamp::fold_tree_from_ss( mypose );
+	core::pose::correctly_add_cutpoint_variants( mypose );
+
+
+	core::scoring::ScoreFunctionOP sfxn = core::scoring::get_score_function();
+	sfxn->set_weight( core::scoring::linear_chainbreak, 1.0);
+
+	// Add linear_chainbreak to score function to punish
+
+	//core::Real score = sfxn->score( * mypose );
+
+	protocols::moves::MonteCarlo mc = protocols::moves::MonteCarlo( mypose,  *sfxn, 1.0 );
+	protocols::moves::PyMOLObserverOP the_observer = protocols::moves::AddPyMOLObserver( mypose, true, 0 );
+	the_observer->pymol().apply( mypose );
+
+	core::kinematics::MoveMap mm;
+	mm.set_bb( true );
+	mm.set_chi( true );
+	core::optimization::MinimizerOptions min_opts( "lbfgs_armijo_atol", 0.01, true );
+	core::optimization::AtomTreeMinimizer atm;
+
+	mypose = protocols::bootcamp::fold_tree_from_ss( mypose );
+	core::pose::Pose copy_pose = mypose;
+
+	core::Size num_res = mypose.size();
+	core::Size mc_cycles = 100;
+	core::Size accepted_count = 0;
+	core::Real running_score_avg = 0.0;
+	for (core::Size i=0; i <= mc_cycles; i++ ) {
+		TR << "Running MC Cycle " << i << std::endl;
+		core::Size randres = numeric::random::uniform() * num_res + 1;
+		core::Real pert1 = numeric::random::gaussian();
+		core::Real pert2 = numeric::random::gaussian();
+		core::Real orig_phi = mypose.phi( randres );
+		core::Real orig_psi = mypose.psi( randres );
+		mypose.set_phi( randres, orig_phi + pert1 );
+		mypose.set_psi( randres, orig_psi + pert2 );
+		core::pack::task::PackerTaskOP repack_task = core::pack::task::TaskFactory::create_packer_task( mypose );
+		repack_task->restrict_to_repacking();
+		core::pack::pack_rotamers( mypose, *sfxn, repack_task );
+		copy_pose = mypose;
+		atm.run( copy_pose, mm, *sfxn, min_opts );
+		mypose = copy_pose;
+
+		TR << "TESTING TESTING TESTING TESTING" << std::endl;
+		
+		bool accepted = mc.boltzmann( mypose );
+		running_score_avg += mc.last_score();  // Add score each cycle. Div below to get avg score
+		if (accepted) {
+			accepted_count += 1;
+			std::cout << "accepted" << std::endl;
+		} else {
+			std::cout << "rejected" << std::endl;
+		}
+	}
+
+	std::cout << accepted_count << " cycles were accepted out of " << mc_cycles << std::endl;
+	std::cout << "Percent Accepted: " << static_cast<core::Real>(accepted_count) / static_cast<core::Real>(mc_cycles) << std::endl;
+	std::cout << "Average Score: " << running_score_avg / static_cast<core::Real>(mc_cycles) << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

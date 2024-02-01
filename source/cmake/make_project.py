@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # make_project.py - modified from mini-interactive by tex.
 

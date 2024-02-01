@@ -38,7 +38,7 @@
 static basic::Tracer TR( "protocols.bootcamp.FoldTreeFromSS.cxxtest" );
 
 //Namespace
-using namespace protocol::bootcamp;
+using namespace protocols::bootcamp;
 
 // --------------- Test Class --------------- //
 

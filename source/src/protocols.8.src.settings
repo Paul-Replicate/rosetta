@@ -16,7 +16,10 @@ sources = {
 		"register2",
 		"register3",
 		"register4",
-	]
+	],
+    "protocols/bootcamp" : [
+        "BootCampMover",
+    ]
 }
 include_path = [
 ]

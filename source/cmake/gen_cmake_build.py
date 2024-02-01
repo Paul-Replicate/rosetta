@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # gen_cmake_build.py - script to parse SCons configuration and generate
 # requisite build files. You should be able to make this call to the script:

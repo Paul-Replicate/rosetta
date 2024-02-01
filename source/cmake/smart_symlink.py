@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # smart_symlink.py - quick script for symlinking binaries into mini/bin
 # usage: python ../smart_symlink.py gcc release

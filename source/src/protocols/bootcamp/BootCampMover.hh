@@ -17,6 +17,7 @@
 // Unit headers
 #include <protocols/bootcamp/BootCampMover.fwd.hh>
 #include <protocols/moves/Mover.hh>
+#include <protocols/jd2/JobDistributor.hh>
 
 // Protocol headers
 #include <protocols/filters/Filter.fwd.hh>

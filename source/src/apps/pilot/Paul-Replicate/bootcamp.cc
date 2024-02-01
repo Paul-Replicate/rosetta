@@ -36,6 +36,8 @@
 #include <core/pose/variant_util.hh>
 
 #include <protocols/bootcamp/fold_tree_from_ss.hh>
+#include <protocols/bootcamp/BootCampMover.hh>
+#include <protocols/bootcamp/BootCampMover.hh>
 
 int main( int argc, char ** argv) {
 	devel::init( argc, argv );
@@ -52,66 +54,13 @@ int main( int argc, char ** argv) {
 
 
 	core::pose::PoseOP mypose = core::import_pose::pose_from_file( filenames[1] );
-	*mypose = protocols::bootcamp::fold_tree_from_ss( *mypose );
-	core::pose::correctly_add_cutpoint_variants(*mypose );
+	//protocols::bootcamp::BootCampMover boot_mover = protocols::bootcamp::BootCampMover();
 
+	// Get new BootCampMoverOP from .fwd file
+	protocols::bootcamp::BootCampMoverOP boot_mover( new protocols::bootcamp::BootCampMover );
 
-	core::scoring::ScoreFunctionOP sfxn = core::scoring::get_score_function();
-	sfxn->set_weight( core::scoring::linear_chainbreak, 1.0);
-
-	// Add linear_chainbreak to score function to punish
-
-	//core::Real score = sfxn->score( * mypose );
-
-	protocols::moves::MonteCarlo mc = protocols::moves::MonteCarlo( *mypose,  *sfxn, 1.0 );
-	protocols::moves::PyMOLObserverOP the_observer = protocols::moves::AddPyMOLObserver( *mypose, true, 0 );
-	the_observer->pymol().apply( *mypose );
-
-	core::kinematics::MoveMap mm;
-	mm.set_bb( true );
-	mm.set_chi( true );
-	core::optimization::MinimizerOptions min_opts( "lbfgs_armijo_atol", 0.01, true );
-	core::optimization::AtomTreeMinimizer atm;
-
-	*mypose = protocols::bootcamp::fold_tree_from_ss( *mypose );
-	core::pose::Pose copy_pose = *mypose;
-
-	core::Size num_res = mypose->size();
-	core::Size mc_cycles = 100;
-	core::Size accepted_count = 0;
-	core::Real running_score_avg = 0.0;
-	for (core::Size i=0; i <= mc_cycles; i++ ) {
-		TR << "Running MC Cycle " << i << std::endl;
-		core::Size randres = numeric::random::uniform() * num_res + 1;
-		core::Real pert1 = numeric::random::gaussian();
-		core::Real pert2 = numeric::random::gaussian();
-		core::Real orig_phi = mypose->phi( randres );
-		core::Real orig_psi = mypose->psi( randres );
-		mypose->set_phi( randres, orig_phi + pert1 );
-		mypose->set_psi( randres, orig_psi + pert2 );
-		core::pack::task::PackerTaskOP repack_task = core::pack::task::TaskFactory::create_packer_task( *mypose );
-		repack_task->restrict_to_repacking();
-		core::pack::pack_rotamers( *mypose, *sfxn, repack_task );
-		copy_pose = *mypose;
-		atm.run( copy_pose, mm, *sfxn, min_opts );
-		*mypose = copy_pose;
-		
-		bool accepted = mc.boltzmann( *mypose );
-		running_score_avg += mc.last_score();  // Add score each cycle. Div below to get avg score
-		if (accepted) {
-			accepted_count += 1;
-			std::cout << "accepted" << std::endl;
-		} else {
-			std::cout << "rejected" << std::endl;
-		}
-	}
-
-	// 68 to 73% accept
-	// avg ~ -250 REU
-
-	std::cout << accepted_count << " cycles were accepted out of " << mc_cycles << std::endl;
-	std::cout << "Percent Accepted: " << static_cast<core::Real>(accepted_count) / static_cast<core::Real>(mc_cycles) << std::endl;
-	std::cout << "Average Score: " << running_score_avg / static_cast<core::Real>(mc_cycles) << std::endl;
+	// Instantaite the JobDistributor
+	protocols::jd2::JobDistributor::get_instance()->go(boot_mover);
 
 	return 0;
 } 
