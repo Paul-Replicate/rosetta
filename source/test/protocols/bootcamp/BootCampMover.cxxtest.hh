@@ -21,11 +21,11 @@
 
 // Project Headers
 #include <protocols/moves/MoverFactory.hh>
+#include <protocols/bootcamp/BootCampMover.hh>
 
 // Core Headers
 #include <core/pose/Pose.hh>
 #include <core/import_pose/import_pose.hh>
-utility::pointer::dynamic_pointer_cast
 
 // Utility, etc Headers
 #include <basic/Tracer.hh>
@@ -44,7 +44,7 @@ public:
 
 	void setUp() {
 		core_init();
-		
+		TR << "TESTING" << std::endl;
 	}
 
 	void tearDown() {
@@ -52,10 +52,15 @@ public:
 	}
 
 
-	void test_get_correct_mover() {
+	void test_BootCampMover() {
 		TS_ASSERT( true );
-		//protocols::moves::MoverOP mover_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
-		//protocols::bootcamp::BootCampMover bcm_op = BootCampMover( utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover > (mover_op));
+		protocols::moves::MoverOP mover_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
+		TS_ASSERT_EQUALS(mover_op->get_name(), "BootCampMover");
+		BootCampMover( utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover > (mover_op));
+		//std::string bcm_name = bcm_op::mover_name();
+		//TR << bcm_op << std::endl;
+		//std::cout << bcm_op << std::endl;
+		//TS_ASSERT_DIFFERS( bcm_op, 0);
 	}
 
 
