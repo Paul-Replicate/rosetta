@@ -37,7 +37,7 @@ namespace bootcamp {
 //Tracer
 static basic::Tracer TR( "protocols.bootcamp.fold_tree_from_ss" );
 
-core::pose::Pose 
+core::kinematics::FoldTree 
 fold_tree_from_ss( core::pose::Pose & pose ) {
     // Take pose return FoldTree
     core::scoring::dssp::Dssp DSSP = core::scoring::dssp::Dssp( pose );
@@ -46,7 +46,7 @@ fold_tree_from_ss( core::pose::Pose & pose ) {
     
     core::kinematics::FoldTree ft_from_dssp = fold_tree_from_dssp_string( dssp_string );
     //pose.fold_tree(ft_from_dssp);
-    return pose;
+    return ft_from_dssp;
 }
 
 core::kinematics::FoldTree

@@ -81,9 +81,10 @@ public:
 		core::pose::Pose pose_in = create_test_in_pdb_pose();
 		//TR << "INPUT POSE TREE: " << pose_in.fold_tree() << std::endl;
 		// core::Size pose_in_ft_size = pose_in.fold_tree().size();
-		core::pose::Pose pose_out = fold_tree_from_ss(pose_in);
+		core::kinematics::FoldTree fold_tree = fold_tree_from_ss(pose_in);
 		// core::Size pose_out_ft_size = pose_out.fold_tree().size();
-		TS_ASSERT_EQUALS(pose_in.size(), pose_out.size());
+		TS_ASSERT_EQUALS(pose_in.size(), fold_tree.size());
+		
 		
 	}
 

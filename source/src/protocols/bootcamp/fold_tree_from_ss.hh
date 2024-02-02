@@ -31,7 +31,7 @@
 namespace protocols {
 namespace bootcamp {
 
-core::pose::Pose 
+core::kinematics::FoldTree 
 fold_tree_from_ss( core::pose::Pose & pose );
 
 core::kinematics::FoldTree

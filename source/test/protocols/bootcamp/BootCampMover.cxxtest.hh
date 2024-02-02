@@ -26,6 +26,7 @@
 // Core Headers
 #include <core/pose/Pose.hh>
 #include <core/import_pose/import_pose.hh>
+#include <core/scoring/ScoreFunction.hh>
 
 // Utility, etc Headers
 #include <basic/Tracer.hh>
@@ -51,18 +52,31 @@ public:
 
 	}
 
+	
 
 	void test_BootCampMover() {
 		TS_ASSERT( true );
 		protocols::moves::MoverOP mover_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
 		TS_ASSERT_EQUALS(mover_op->get_name(), "BootCampMover");
-		BootCampMover( utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover > (mover_op));
-		//std::string bcm_name = bcm_op::mover_name();
-		//TR << bcm_op << std::endl;
-		//std::cout << bcm_op << std::endl;
-		//TS_ASSERT_DIFFERS( bcm_op, 0);
+		protocols::bootcamp::BootCampMoverOP bcm_op = utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover >(mover_op);
+		std::cout << "TEST TEST TEST" << std::endl;
+		TS_ASSERT_DIFFERS(bcm_op, nullptr);
+		TR << "Differs Passed" << std::endl;
+		TS_ASSERT_EQUALS(bcm_op->mover_name(), "BootCampMover");
+		TR << "Equals Passed" << std::endl;
 	}
 
+	void test_sfxn_get_set() {
+		protocols::bootcamp::BootCampMoverOP bcm_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
+		TR << bcm_op->get_name() << std::endl;
+		//core::scoring::ScoreFunctionOP orig_sfxn = bcm_op->get_score_function();
+		//core::scoring::ScoreFunctionOP new_sfxn = core::scoring::get_score_function();
+		//TS_ASSERT_EQUALS( orig_sfxn->get_name(), new_sfxn->get_name() );
 
+	}
+
+	void num_iterations_get_set() {
+		
+	}
 
 };

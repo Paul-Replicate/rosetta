@@ -48,10 +48,9 @@ int main( int argc, char ** argv) {
 		std::cout << "You didn't provide a PDB file with the -in::file::s option" << std::endl;
 		return 1;
 	}	
-
+	
 	thread_local static basic::Tracer TR( "apps.pilot.Paul-Replicate.bootcamp.cc" );
     TR << "TestingTracer" << std::endl;
-
 
 	core::pose::PoseOP mypose = core::import_pose::pose_from_file( filenames[1] );
 	//protocols::bootcamp::BootCampMover boot_mover = protocols::bootcamp::BootCampMover();

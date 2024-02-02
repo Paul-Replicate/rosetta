@@ -24,6 +24,7 @@
 
 // Core headers
 #include <core/pose/Pose.fwd.hh>
+#include <core/scoring/ScoreFunction.hh>
 
 // Basic/Utility headers
 #include <basic/datacache/DataMap.fwd.hh>
@@ -63,6 +64,18 @@ public:
 
 	void
 	show( std::ostream & output = std::cout ) const override;
+
+	void
+	set_score_function( core::scoring::ScoreFunctionOP & sfxn );
+
+	void
+	set_num_iterations( core::Size & num_iterations );
+
+	core::scoring::ScoreFunctionOP
+	get_score_function();
+
+	core::Size
+	get_num_iterations();
 
 
 public:
@@ -106,7 +119,8 @@ public: //Function overrides needed for the citation manager:
 private: // methods
 
 private: // data
-
+	core::scoring::ScoreFunctionOP sfxn_;
+	core::Size num_iterations_;
 };
 
 std::ostream &
