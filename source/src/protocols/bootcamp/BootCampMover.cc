@@ -148,12 +148,12 @@ BootCampMover::apply( core::pose::Pose& mypose ){
 }
 
 core::scoring::ScoreFunctionOP
-BootCampMover::get_score_function() {
+BootCampMover::get_score_function() const {
 	return sfxn_;
 }
 
 core::Size
-BootCampMover::get_num_iterations() {
+BootCampMover::get_num_iterations() const {
 	return num_iterations_;
 }
 

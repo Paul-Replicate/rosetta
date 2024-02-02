@@ -72,10 +72,10 @@ public:
 	set_num_iterations( core::Size & num_iterations );
 
 	core::scoring::ScoreFunctionOP
-	get_score_function();
+	get_score_function() const;
 
 	core::Size
-	get_num_iterations();
+	get_num_iterations() const;
 
 
 public:

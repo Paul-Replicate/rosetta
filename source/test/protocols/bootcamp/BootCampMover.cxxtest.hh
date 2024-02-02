@@ -56,9 +56,11 @@ public:
 
 	void test_BootCampMover() {
 		TS_ASSERT( true );
-		protocols::moves::MoverOP mover_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
+		protocols::moves::MoverOP mover_op = 
+				protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
 		TS_ASSERT_EQUALS(mover_op->get_name(), "BootCampMover");
-		protocols::bootcamp::BootCampMoverOP bcm_op = utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover >(mover_op);
+		protocols::bootcamp::BootCampMoverOP bcm_op = 
+				utility::pointer::dynamic_pointer_cast< protocols::bootcamp::BootCampMover >(mover_op);
 		std::cout << "TEST TEST TEST" << std::endl;
 		TS_ASSERT_DIFFERS(bcm_op, nullptr);
 		TR << "Differs Passed" << std::endl;
@@ -67,8 +69,9 @@ public:
 	}
 
 	void test_sfxn_get_set() {
-		protocols::bootcamp::BootCampMoverOP bcm_op = protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
-		TR << bcm_op->get_name() << std::endl;
+		//protocols::bootcamp::BootCampMoverOP bcm_op = 
+		//		protocols::moves::MoverFactory::get_instance()->newMover( "BootCampMover" );
+		//TR << bcm_op->get_name() << std::endl;
 		//core::scoring::ScoreFunctionOP orig_sfxn = bcm_op->get_score_function();
 		//core::scoring::ScoreFunctionOP new_sfxn = core::scoring::get_score_function();
 		//TS_ASSERT_EQUALS( orig_sfxn->get_name(), new_sfxn->get_name() );
@@ -76,7 +79,7 @@ public:
 	}
 
 	void num_iterations_get_set() {
-		
+			
 	}
 
 };
