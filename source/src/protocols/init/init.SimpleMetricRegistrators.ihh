@@ -97,6 +97,8 @@ static SimpleMetricRegistrator< core::simple_metrics::per_residue_metrics::Water
 
 static SimpleMetricRegistrator< core::simple_metrics::per_residue_metrics::ProbabilityConservationMetricCreator > reg_ProbabilityConservationCreator;
 
+static SimpleMetricRegistrator< core::simple_metrics::per_residue_metrics::PerResidueBFactorMetricCreator > reg_PerResidueBFactorMetricCreator;
+
 static SimpleMetricRegistrator< core::simple_metrics::per_residue_metrics::PerResidueClashMetricCreator > reg_PerResidueClashMetricCreator;
 
 static SimpleMetricRegistrator< core::simple_metrics::per_residue_metrics::PerResidueDensityFitMetricCreator > reg_PerResidueDensityFitMetricCreator;

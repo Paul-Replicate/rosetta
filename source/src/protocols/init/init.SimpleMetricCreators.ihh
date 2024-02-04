@@ -20,6 +20,7 @@
 #include <core/simple_metrics/composite_metrics/BestMutationsFromProbabilitiesMetricCreator.hh> // Added by ME, 31.08.2023
 
 #include <core/simple_metrics/per_residue_metrics/LoadedProbabilitiesMetricCreator.hh> // Added by ME, 14 Sept. 2023
+#include <core/simple_metrics/per_residue_metrics/PerResidueBFactorMetricCreator.hh> // Added by PDT 02.02.2024
 #include <core/simple_metrics/per_residue_metrics/ProbabilityConservationMetricCreator.hh> // Added by ME, 28.08.2023
 
 #include <core/simple_metrics/per_residue_metrics/SidechainNeighborCountMetricCreator.hh>
